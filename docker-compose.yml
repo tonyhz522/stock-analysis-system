@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: stock_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: stock_db
+      MYSQL_USER: stockuser
+      MYSQL_PASSWORD: stockpass123
+    ports:
+      - "3307:3306"  # 使用 3307 端口映射到容器内的 3306
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    platform: linux/amd64  # 兼容 M1/M2 Mac
+    networks:
+      - stock_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+  streamlit:
+    build: .
+    container_name: stock_streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_USER: stockuser
+      DB_PASSWORD: stockpass123
+      DB_NAME: stock_db
+    volumes:
+      - ./app:/app
+    networks:
+      - stock_network
+    command: streamlit run app.py
+
+networks:
+  stock_network:
+    driver: bridge
