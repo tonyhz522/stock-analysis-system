@@ -18,5 +18,5 @@ docker compose down
 docker compose down -v
 rm -rf mysql_data
 
-#run the shell command and start the project
+# run the shell command and start the project
 ./setup-new.sh
