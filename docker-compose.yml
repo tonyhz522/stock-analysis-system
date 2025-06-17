@@ -3,16 +3,14 @@ services:
     image: mysql:8.0
     container_name: stock_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: stock_db
-      MYSQL_USER: stockuser
-      MYSQL_PASSWORD: stockpass123
-    ports:
-      - "3307:3306"  # 使用 3307 端口映射到容器内的 3306
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-stock_db}
+      MYSQL_USER: ${MYSQL_USER:-stockuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-stockpass123}
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    platform: linux/amd64  # 兼容 M1/M2 Mac
+    platform: linux/amd64
     networks:
       - stock_network
     healthcheck:
@@ -24,21 +22,26 @@ services:
     build: .
     container_name: stock_streamlit
     ports:
-      - "8501:8501"
+      - "${PORT:-8501}:8501"
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       DB_HOST: mysql
-      DB_USER: stockuser
-      DB_PASSWORD: stockpass123
-      DB_NAME: stock_db
+      DB_USER: ${MYSQL_USER:-stockuser}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-stockpass123}
+      DB_NAME: ${MYSQL_DATABASE:-stock_db}
+      PORT: ${PORT:-8501}
     volumes:
       - ./app:/app
     networks:
       - stock_network
-    command: streamlit run app.py
+    command: streamlit run app.py --server.address=0.0.0.0 --server.port=${PORT:-8501}
 
 networks:
   stock_network:
     driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
